@@ -8,7 +8,7 @@ var Pirca = (function($) {
 	return function(selection, options) {
 		var config = $.extend({
 				classElements: 'box',
-				width:100
+				width: 100
 			}, options),
 			$grid = (function() {
 				var g = $(selection).eq(0);
@@ -17,46 +17,137 @@ var Pirca = (function($) {
 				}
 				return g;
 			})(),
-			$boxes = $(selection).find('>.' + config.classElements).css('position', 'absolute'),
+			$boxes = $grid.find('>.' + config.classElements).css('position', 'absolute'),
+			len = 0,
 			segments,
+			gridHeight = 0,
+
+			getOrderedSegments = function() {
+				var arr = segments.slice(0);
+				arr.sort(function(a, b) {
+					if (a[1] < b[1]) {
+						return -1;
+					} else if (a[1] > b[1]) {
+						return 1;
+					} else {
+						if (a[0] < b[0]) {
+							return -1;
+						} else if (a[0] > b[0]) {
+							return 1;
+						}
+					}
+				});
+				return arr;
+			},
+			setBoxPosition = function($this) {
+				var segs = Math.ceil($this.width() / config.width),
+					h = $this.outerHeight();
+
+				var segmentsOrdered = getOrderedSegments();
+
+				for (var i = 0; i < len; i++) {
+					var current = segmentsOrdered[i];
+					var index = current[0];
+					var y = current[1];
+					//
+					var success = true,
+						segmentsToUpdate = [];
+					segmentsToUpdate.push(current);
+					var parar = 2;
+
+					for (var j = 1; j < segs; j++) {
+						if ((index + j) < len) {
+							var next = segments[index + j];
+							if (next[1] <= y) {
+								segmentsToUpdate.push(next);
+							} else {
+								success = false;
+							}
+						} else {
+							success = false;
+						}
+					}
+					var parar = 2;
+					if (success) {
+						var x = current[0] * config.width;
+						$this.css({
+							'top': y + 'px',
+							'left': x + 'px'
+						});
+
+						var lastY = y + h;
+
+						if (lastY > gridHeight) {
+							gridHeight = lastY;
+							$grid.height(gridHeight);
+						}
+
+						var lenToUpdate = segmentsToUpdate.length;
+						for (var k = 0; k < lenToUpdate; k++) {
+							var indexToUpdate = segmentsToUpdate[k][0];
+							segments[indexToUpdate][1] = lastY;
+						}
+						i = 9999999;
+					}
+				}
+			},
 			render = function() {
-				var len = 0;
-				segments = (function(){
-					var arr = [],
-						len = Math.ceil($grid.width()/config.width);
-					for(var i = 0;i<len;i++){
-						arr.push([i,0]);
+				
+				segments = (function() {
+					var arr = [];
+					len = Math.floor($grid.width() / config.width);
+					for (var i = 0; i < len; i++) {
+						arr.push([i, 0]);
 					}
 					return arr;
 				})();
 
+				
 
 
-				$boxes.each(function(){
-					var $this = $(this),
-						segs = Math.ceil($this.width()/config.width),
-						h = $this.height();
-
-					var segmentsOrdered = segments;
-
-
-
-
+				$boxes.each(function() {
+					setBoxPosition($(this));
 				});
 
+				
 
 
 
-
-				[
-					[0, 0]
-				];
 			};
 		//
 		render();
 		//
+
+		var timer = null
+
+		$(window).resize(function() {
+			if (timer != null) {
+				clearTimeout(timer);
+			}
+			timer = setTimeout(function() {
+				render();
+			}, 300);
+		});
+
+
+
 		return {
-			render: render
+			render: render,
+			append:function($box){
+				$grid.append($box.css('position', 'absolute'));
+				$boxes = $grid.find('>.' + config.classElements);
+				setBoxPosition($box);
+			},
+			prepend:function($box){
+				$grid.prepend($box.css('position', 'absolute'));
+				$boxes = $grid.find('>.' + config.classElements);
+				render();
+			},
+			quit:function($box){
+				$grid.find($box).remove();
+				$boxes = $grid.find('>.' + config.classElements);
+				render();
+			}
 		};
 	};
 })(jQuery);
