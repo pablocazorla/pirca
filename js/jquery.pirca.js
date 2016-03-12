@@ -48,6 +48,7 @@ var Pirca = (function($) {
 				for (var i = 0; i < len; i++) {
 					var current = segmentsOrdered[i];
 					var index = current[0];
+					var x = current[0] * config.width;
 					var y = current[1];
 					//
 					var success = true,
@@ -67,9 +68,40 @@ var Pirca = (function($) {
 							success = false;
 						}
 					}
+
+					if(!success){
+						
+
+						var left = segs - segmentsToUpdate.length;
+
+						for(var m = 1;m<=left;m++){
+							var busco = 'yes';							
+							if ((index - m) >= 0) {
+								var next = segments[index - m];
+								if (next[1] <= y) {
+									segmentsToUpdate.push(next);
+									var x = next[0] * config.width;
+								}
+							}
+						}
+						if(segmentsToUpdate.length>=segs){
+							success = true;
+						}
+
+
+
+
+						
+					}
+
+
+
+
+
+
 					var parar = 2;
 					if (success) {
-						var x = current[0] * config.width;
+						
 						$this.css({
 							'top': y + 'px',
 							'left': x + 'px'
